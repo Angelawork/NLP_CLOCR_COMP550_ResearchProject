@@ -1,0 +1,16 @@
+models:
+  openai:
+    - gpt-4o
+    - gpt-4o-mini
+  openrouter:
+    - meta-llama/llama-3.1-8b-instruct
+    - meta-llama/llama-3.1-70b-instruct
+    - google/gemini-flash-1.5-8b
+    - google/gemma-2-9b-it
+    - qwen/qwen-2-7b-instruct
+    - mistralai/mistral-7b-instruct
+
+prompt:
+  system_prompt: "You are a helpful assistant."
+  user_prompt: "You will be given a string obtained from OCR that may contain errors due to recognition inaccuracies. Your task is to fix these errors. Output only the corrected version, as your output will be passed directly to the user. DON'T OUTPUT ANYTHING ELSE. \n\n Text: \n\n"
+
