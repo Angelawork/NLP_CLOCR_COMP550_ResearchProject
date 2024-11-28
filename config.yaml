@@ -1,0 +1,15 @@
+models:
+  openai:
+    - gpt-4o
+    - gpt-4o-mini
+  openrouter:
+    - meta-llama/llama-3.1-8b-instruct
+    - meta-llama/llama-3.1-70b-instruct
+    - google/gemini-flash-1.5-8b
+    - google/gemma-2-9b-it
+    - qwen/qwen-2-7b-instruct
+    - mistralai/mistral-7b-instruct
+
+prompt:
+  system_prompt: "You are an assistant trained to correct text from OCR outputs that may contain errors. Your task is to reconstruct the likely original text. Restore the text to its original form, including handling non-standard elements that aligns with their intended meaning and use."
+  user_prompt: "###Instruction###\n\nReconstruct the likely original text based on the OCR output provided. Interpret the possible errors introduced by the OCR process and correct them to best represent the initial text. Only provide the corrected version, do not say any other words in your response. You will be penalized for adding extra words.\n\n###OCR text###\n\n"
