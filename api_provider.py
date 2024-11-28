@@ -2,35 +2,45 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
+# Load environment variables
 load_dotenv()
+
+# Retrieve API keys from environment variables
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-async def generate_response(provider: str, model_name: str, prompt: str, user_message: str):
+
+async def generate_response(
+    provider: str, model_name: str, prompt: str, user_message: str
+):
     if provider == "openrouter":
+        # Initialize OpenRouter client
         client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=openrouter_api_key,
         )
     elif provider == "openai":
+        # Initialize OpenAI client with the API key
         client = OpenAI(api_key=openai_api_key)
     else:
         raise ValueError("Unsupported provider. Choose 'openrouter' or 'openai'.")
 
+    # Create a chat completion request with the provided model and messages
     completion = client.chat.completions.create(
-        model=model_name, 
+        model=model_name,
         messages=[
             {"role": "system", "content": prompt},
-            {"role": "user", "content": user_message}
-        ]
+            {"role": "user", "content": user_message},
+        ],
     )
     return completion.choices[0].message.content
 
 
 if __name__ == "__main__":
     client = OpenAI(api_key=openai_api_key)
+
+    # Retrieve and list available OpenAI models
     models = client.models.list()
     print("Available OpenAI models:")
     for model in models.data:
         print(model.id)
-    
