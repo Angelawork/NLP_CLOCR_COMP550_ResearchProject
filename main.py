@@ -5,7 +5,7 @@ import yaml
 import asyncio
 import json
 from api_provider import generate_response
-import Levenshtein  # Moved import to the top
+import Levenshtein
 from tqdm.asyncio import tqdm
 
 # Load configuration from the YAML file
