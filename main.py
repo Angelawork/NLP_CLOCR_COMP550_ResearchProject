@@ -26,10 +26,8 @@ def calculate_cer(ocr_text, gt_text):
     """
     edit_distance = Levenshtein.distance(ocr_text, gt_text)
     total_gt_chars = len(gt_text)
+    cer = edit_distance / total_gt_chars if total_gt_chars > 0 else 1.0
 
-    if total_gt_chars == 0:
-        return float("inf") if len(ocr_text) > 0 else 0.0
-    cer = edit_distance / total_gt_chars
     return cer
 
 
