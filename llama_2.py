@@ -15,21 +15,20 @@ from main import calculate_cer
 from Levenshtein import distance as levenshtein_distance
 # need to login to access model
 from huggingface_hub import login
+from model_eval import test_prompt_template
 hf_api_key = os.getenv("HF_API_KEY")
 login(token=hf_api_key)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-
-def evaluate(tokenizer, model, data, output_file, batch_size=16):
+def evaluate(tokenizer, model, data, output_file, batch_size=1):
     preds, cer_values = [], []
     input_texts = [test_prompt_template(r) for r in data.to_dict(orient="records")]
-
-    for i in range(0, len(input_texts), batch_size):
+    for i in range(0, 3, batch_size):
         batch_texts = input_texts[i:i + batch_size]
-        inputs = tokenizer(batch_texts, return_tensors="pt", truncation=True, max_length=1024, padding=True)
-        outputs = model.generate(inputs.input_ids, max_new_tokens=2048)
-
+        inputs = tokenizer(batch_texts, return_tensors="pt", truncation=True, max_length=1024, padding=True).to(device)
+        with torch.no_grad():
+            outputs = model.generate(inputs.input_ids, max_new_tokens=512,pad_token_id=tokenizer.pad_token_id)
         batch_pred = tokenizer.batch_decode(outputs, skip_special_tokens=True)
         batch_pred = [pred.strip() for pred in batch_pred]
 
@@ -58,9 +57,6 @@ Fix the OCR errors in the provided text.
 {example["Ground Truth"]}
 """
 
-def test_prompt_template(example):
-    return f"OCR Text: {example['OCR Text']}"
-
 def main(args):
     config = load_config(args.config)
     model_name = f"meta-llama/{args.model.capitalize()}-hf"
@@ -83,13 +79,19 @@ def main(args):
         output_dir=output_dir,
         **config,
     )
-    tokenizer = AutoTokenizer.from_pretrained("./model/llama-2-7b-ocr/")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
     if args.tuning == "eval":
-        model = AutoModelForCausalLM.from_pretrained("./model/llama-2-7b-ocr/")
-        model.eval()
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=bnb_config if bnb_config else None,
+            use_cache=True,
+            device_map="auto" if torch.cuda.is_available() else None,
+        )
+        with torch.no_grad():
+            train_cer = evaluate(tokenizer, model, pd.read_csv(args.data), "./evaluation_results.csv")
     else:
         if args.tuning == "full":
             train = pd.read_csv(args.data)
@@ -177,11 +179,11 @@ def main(args):
         trainer.train()
         trainer.save_model(output_dir)
 
-    train_cer = evaluate(tokenizer, model, pd.read_csv(args.data), "./evaluation_results.csv")
-    print(f"Overall Training CER: {train_cer:.4f}")
-    test_data = pd.read_csv("./dataset/test.csv")
-    test_cer = evaluate(tokenizer, model, test_data, "./test_results.csv")
-    print(f"Overall Test CER: {test_cer:.4f}")
+    # train_cer = evaluate(tokenizer, model, pd.read_csv(args.data), "./evaluation_results.csv")
+    # print(f"Overall Training CER: {train_cer:.4f}")
+    # test_data = pd.read_csv("./dataset/test.csv")
+    # test_cer = evaluate(tokenizer, model, test_data, "./test_results.csv")
+    # print(f"Overall Test CER: {test_cer:.4f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fine-tuning for Llama")
