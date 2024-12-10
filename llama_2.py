@@ -15,11 +15,23 @@ from main import calculate_cer
 from Levenshtein import distance as levenshtein_distance
 # need to login to access model
 from huggingface_hub import login
-from model_eval import test_prompt_template
+# from model_eval import test_prompt_template
 hf_api_key = os.getenv("HF_API_KEY")
 login(token=hf_api_key)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 print(f"Using device: {device}")
+
+def test_prompt_template(example):
+    return f"""### Instruction:
+        Fix the OCR errors in the provided text.
+
+        ### Input:
+        {example}
+
+        ### Response:
+        """
+
 
 def evaluate(tokenizer, model, data, output_file, batch_size=1):
     preds, cer_values = [], []
