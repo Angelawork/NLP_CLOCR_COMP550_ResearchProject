@@ -25,7 +25,7 @@ def test_prompt_template(example):
         ### Response:
         """
 
-weight_dir = "./model/llama-2-7b-ocr"
+weight_dir = "./model/bart-ocr-full"
 test = pd.read_csv("./dataset/test.csv")
 test = Dataset.from_pandas(test)
 
@@ -57,4 +57,4 @@ for i in tqdm(range(len(test))):
     preds.append(pred)
 
 results = get_results(test, preds)
-results.to_csv("./llama-2-7b.csv", index=False)
+results.to_csv("./bart-full.csv", index=False)
