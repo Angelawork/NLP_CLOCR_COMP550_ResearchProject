@@ -7,12 +7,15 @@ import json
 from api_provider import generate_response
 import Levenshtein
 from tqdm.asyncio import tqdm
+from jiwer import wer
 
 # Load configuration from the YAML file
 with open("config.yaml", "r") as file:
     config = yaml.safe_load(file)
 
-
+def calculate_wer(ocr_text, gt_text):
+    return wer(gt_text, ocr_text)
+    
 def calculate_cer(ocr_text, gt_text):
     """
     Calculate the Character Error Rate (CER) between an OCR output and ground truth (GT).
