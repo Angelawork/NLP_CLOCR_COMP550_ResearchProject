@@ -10,8 +10,7 @@ from transformers import (
 )
 from peft import (
     get_peft_model,
-    PrefixTuningConfig,
-    PromptTuningConfig,
+    LoraConfig,
     TaskType,
     PromptTuningInit
 )
@@ -53,9 +52,7 @@ def load_config(file):
         "logging_steps": int,
         "eval_steps": int,
         "save_steps": int,
-        "save_total_limit": int,
-        "num_virtual_tokens": int,
-        "encoder_hidden_size": int
+        "save_total_limit": int
     }
     
     for field, type_func in numeric_fields.items():
@@ -75,7 +72,6 @@ def prepare_dataset(data, tokenizer, max_length=512):
             truncation=True
         )
         
-        # Format targets
         with tokenizer.as_target_tokenizer():
             labels = tokenizer(
                 examples["Ground Truth"],
@@ -92,9 +88,8 @@ def prepare_dataset(data, tokenizer, max_length=512):
 def main(args):
     config = load_config(args.config)
     model_name = args.model
-    output_dir = os.path.join("model", f"bart-ocr-{args.tuning}")
+    output_dir = os.path.join("model", f"bart-Lora-aggregated_wer0.55_cer0.15_train")
     
-    # Load and prepare data
     train_df = pd.read_csv(args.data)
     train_df = train_df.sample(frac=1, random_state=42).reset_index(drop=True)
     
@@ -116,8 +111,6 @@ def main(args):
         "save_total_limit": 3,
         "load_best_model_at_end": True,
         "num_train_epochs": 3,
-        "save_strategy": "steps",
-        "save_steps": 500
     }
     
     training_args_dict = {**default_args, **config}
@@ -126,45 +119,63 @@ def main(args):
         **training_args_dict
     )
     
-    # Initialize tokenizer and model
     tokenizer = BartTokenizer.from_pretrained(model_name)
     model = BartForConditionalGeneration.from_pretrained(model_name)
-    
-    if args.tuning == "ptuning":
-        peft_config = PromptTuningConfig(
+
+    if args.tuning == "lora":
+        peft_config = LoraConfig(
             task_type=TaskType.SEQ_2_SEQ_LM,
-            prompt_tuning_init=PromptTuningInit.TEXT,
-            prompt_tuning_init_text="Fix OCR errors",
-            num_virtual_tokens=50, 
-            tokenizer_name_or_path=model_name,
+            r=8,  # rank of the update matrices
+            lora_alpha=32,  # scaling factor
+            lora_dropout=0.1,
+            target_modules=["q_proj", "v_proj", "k_proj", "o_proj", "fc1", "fc2"],
+            bias="none",
         )
         model = get_peft_model(model, peft_config)
-    
-    # Prepare datasets
-    tokenized_train_dataset = prepare_dataset(train_dataset, tokenizer)
-    tokenized_eval_dataset = prepare_dataset(eval_dataset, tokenizer)
-    
-    # Initialize trainer
-    trainer = Seq2SeqTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_train_dataset,
-        eval_dataset=tokenized_eval_dataset,
-        tokenizer=tokenizer,
-        data_collator=DataCollatorForSeq2Seq(tokenizer, model=model)
-    )
+        model.print_trainable_parameters()  # Print trainable parameters info
+        
+        tokenized_train_dataset = prepare_dataset(train_dataset, tokenizer)
+        tokenized_eval_dataset = prepare_dataset(eval_dataset, tokenizer)
+        
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_train_dataset,
+            eval_dataset=tokenized_eval_dataset,
+            tokenizer=tokenizer,
+            data_collator=DataCollatorForSeq2Seq(tokenizer, model=model))
+
+    if args.tuning == "full":
+        tokenized_train_dataset = prepare_dataset(train_dataset, tokenizer)
+        tokenized_eval_dataset = prepare_dataset(eval_dataset, tokenizer)
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_train_dataset,
+            eval_dataset=tokenized_eval_dataset,
+            tokenizer=tokenizer,
+            data_collator=DataCollatorForSeq2Seq(tokenizer, model=model)
+        )
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_train_dataset,
+            eval_dataset=tokenized_eval_dataset,
+            tokenizer=tokenizer,
+            data_collator=DataCollatorForSeq2Seq(tokenizer, model=model)
+        )
     
     # Train and save
     trainer.train()
     trainer.save_model(output_dir)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="P-tuning BART for OCR correction")
+    parser = argparse.ArgumentParser(description="full tuning for aggregated_wer0.55_cer0.15_train")
     parser.add_argument(
         "--model",
         type=str,
         default="facebook/bart-base",
-        help="BART model to use (e.g., facebook/bart-base, facebook/bart-large)"
+        help="BART model to use facebook/bart-base"
     )
     parser.add_argument(
         "--config",
@@ -176,13 +187,13 @@ if __name__ == "__main__":
         "--data",
         type=str,
         help="Path to training data",
-        default="./dataset/train.csv"
+        default="./dataset/aggregated_wer0.55_cer0.15_train.csv"
     )
     parser.add_argument(
         "--tuning",
         type=str,
-        choices=["ptuning"],
-        default="ptuning",
+        choices=["lora"],
+        default="lora",
         help="Specify tuning type"
     )
     
