@@ -31,7 +31,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 def prepare_input_text(text):
-    """Clean and standardize input text."""
     return text.strip()
 
 
@@ -40,7 +39,8 @@ def load_config(file):
         config = yaml.safe_load(f)
     
     bart_config = config.get("bart", {})
-    
+
+    # ensure everything in format
     numeric_fields = {
         "learning_rate": float,
         "num_train_epochs": int,
@@ -79,7 +79,7 @@ def prepare_dataset(data, tokenizer, max_length=512):
                 padding=False,
                 truncation=True
             )
-            
+        #match the labels here
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
     
@@ -88,8 +88,9 @@ def prepare_dataset(data, tokenizer, max_length=512):
 def main(args):
     config = load_config(args.config)
     model_name = args.model
+    #change the model path here each time for different model
     output_dir = os.path.join("model", f"bart-Lora-aggregated_wer0.55_cer0.15_train")
-    
+    #save output csv
     train_df = pd.read_csv(args.data)
     train_df = train_df.sample(frac=1, random_state=42).reset_index(drop=True)
     
@@ -100,6 +101,8 @@ def main(args):
     train_dataset = Dataset.from_pandas(train_df_split)
     eval_dataset = Dataset.from_pandas(eval_df_split)
     
+    #call yaml file 
+    #either way
     default_args = {
         "evaluation_strategy": "steps",
         "eval_steps": 500,
@@ -132,7 +135,8 @@ def main(args):
             bias="none",
         )
         model = get_peft_model(model, peft_config)
-        model.print_trainable_parameters()  # Print trainable parameters info
+        model.print_trainable_parameters()  
+        # Print trainable parameters info
         
         tokenized_train_dataset = prepare_dataset(train_dataset, tokenizer)
         tokenized_eval_dataset = prepare_dataset(eval_dataset, tokenizer)
@@ -145,6 +149,7 @@ def main(args):
             tokenizer=tokenizer,
             data_collator=DataCollatorForSeq2Seq(tokenizer, model=model))
 
+    #full-tuning the model
     if args.tuning == "full":
         tokenized_train_dataset = prepare_dataset(train_dataset, tokenizer)
         tokenized_eval_dataset = prepare_dataset(eval_dataset, tokenizer)
