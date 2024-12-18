@@ -4,22 +4,17 @@ import torch
 from datasets import Dataset
 from main import calculate_cer, calculate_wer
 
-# Setup device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def evaluate_model(model_path, base_model_name, eval_data_path):
-    # Load the tokenizer
     tokenizer = BartTokenizer.from_pretrained(base_model_name)
     
-    # For full fine-tuning, load the model directly (no PEFT)
     model = BartForConditionalGeneration.from_pretrained(model_path)
     model.to(device)
     model.eval()
     
-    # Load evaluation data
     eval_df = pd.read_csv(eval_data_path)
     
-    # Evaluation loop
     predictions = []
     cer_values = []
     wer_values = []
@@ -53,10 +48,10 @@ def evaluate_model(model_path, base_model_name, eval_data_path):
             cer_values.append(cer)
             wer_values.append(wer)
             
-            print(f"\nOriginal: {truth}")
-            print(f"Predicted: {pred}")
-            print(f"CER: {cer:.4f}")
-            print(f"WER: {wer:.4f}")
+            # print(f"\nOriginal: {truth}")
+            # print(f"Predicted: {pred}")
+            # print(f"CER: {cer:.4f}")
+            # print(f"WER: {wer:.4f}")
     
     avg_cer = sum(cer_values) / len(cer_values)
     avg_wer = sum(wer_values) / len(wer_values)
@@ -71,12 +66,12 @@ def evaluate_model(model_path, base_model_name, eval_data_path):
         "WER": wer_values  
     })
     
-    results_df.to_csv("results.csv", index=False)
+    results_df.to_csv("bart-full-aggregated_wer0.55_cer0.15.csv", index=False)
     return avg_cer, avg_wer
 
 if __name__ == "__main__":
-    model_path = "./model/bart-ocr-full"
+    model_path = "./model/bart-full-aggregated_wer0.55_cer0.15_train"
     base_model_name = "facebook/bart-base" 
-    eval_data_path = "./dataset/test.csv" 
+    eval_data_path = "./dataset/original_val.csv" 
     
     avg_cer, avg_wer = evaluate_model(model_path, base_model_name, eval_data_path)
