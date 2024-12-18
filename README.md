@@ -1,4 +1,15 @@
-# NLP_CLOCR_COMP550_ResearchProject
+# Exploring Tuning Strategies for Post-OCR Correction: A Comparative Analysis of Modern LLMs
+
+Historical newspapers, with their invaluable insights into past societies and events, present unique challenges for Optical Character Recognition systems due to degraded paper quality, irregular layouts, and antiquated typography. The experiment primarily focused on evaluating the effectiveness of parameter-efficient fine-tuning with LoRA compared to full fine-tuning for open-source models, highlighting their trade-offs in error reduction and cost-efficiency. Prompt-tuning, particularly with few-shot learning, demonstrated strong performance for commercial LLMs. While commercial models outperformed open-source alternatives in terms of low error rates, the gap was modest, with fine-tuned open-source models still offering a highly scalable and relatively reliable alternative. These findings provide actionable insights into the trade-offs between fine-tuning and prompt-tuning strategies, contributing to developing efficient and scalable post-OCR correction pipelines for historical document processing. We release our synthetic dataset to facilitate further evaluation and research.
+
+---
+Our work aims to systematically review and explore the relative effectiveness of fine-tuning and prompt-tuning approaches for post-OCR correction, focusing on both open-source and commercial LLMs. Given the complexity of OCR errors in historical texts and the diverse capabilities of modern LLMs, this study adopts an exploratory perspective, recognizing model selection, evaluation metrics (CER, WER), and subjective interpretation of results. By combining designed experimentation with grounded evaluations, we aim to seek answers for:
+- Empirical analysis:
+  - Under what conditions do fine-tuning and prompt-tuning provide the most effective performance for post-OCR correction tasks, based on the measurement metrics (WER, CER)?
+- Sensitivity to data augmentation technique:
+  - Does data augmentation improve correction performance, and how sensitive is this improvement to variations in tuning strategies?
+- Real-world application:
+  - How do fine-tuned open-source models compare to commercial LLM solutions in terms of cost-effectiveness and viability for large-scale historical document post-correction?
 
 ## Performance of Open-Source Model trained with/without synthetic data. 
 Models trained on BLN600 only are labelled "original," while those trained on augmented datasets are labelled by their target CER-WER pairs.
@@ -25,6 +36,7 @@ Models trained on BLN600 only are labelled "original," while those trained on au
 |                          | 0.15-0.55        | 0.0501        | 0.0520      | 0.0505       | 0.0749        | **0.0893**  | 0.0881       |
 |                          | original         | 0.0539        | 0.0684      | 0.0663       | 0.0890        | 0.0932      | 0.1011       |
 
+---
 
 ## Performance of Commercial Models Based on Prompt Tuning Strategy
 
